@@ -6,6 +6,8 @@ classdef MonteCarloValidator
         Generator 
         Estimator
         NumSamples (1,1) double = 1000;
+        SigmaSqRot (3,1) double = ones(3,1);
+        SigmaSqTrans (3,1) double = ones(3,1);
     end
     methods
         function obj = MonteCarloValidator(gen, est, varargin)
@@ -17,6 +19,24 @@ classdef MonteCarloValidator
                 switch lower(varargin{k})
                     case 'numsamples'
                         obj.NumSamples = varargin{k+1};
+                    case 'sigma_sq_rot'
+                        val = varargin{k+1};
+                        if isscalar(val)
+                            obj.SigmaSqRot = val * ones(3,1);
+                        elseif isvector(val) && numel(val) == 3
+                            obj.SigmaSqRot = val(:);
+                        else
+                            error('SigmaSqRot must be a scalar or 3-element vector');
+                        end
+                    case 'sigma_sq_trans'
+                        val = varargin{k+1};
+                        if isscalar(val)
+                            obj.SigmaSqTrans = val * ones(3,1);
+                        elseif isvector(val) && numel(val) == 3
+                            obj.SigmaSqTrans = val(:);
+                        else
+                            error('SigmaSqTrans must be a scalar or 3-element vector');
+                        end
                     otherwise
                         error('Unknown parameter %s', varargin{k});
                 end
@@ -24,30 +44,27 @@ classdef MonteCarloValidator
         end
 
         function results = validate(obj)
-            % GENERATE data
+            % Generate data
             [pc1, pc2, T_true] = obj.Generator.generate();
-            % OPTIONALLY align via ICP or direct use of T_true
-            T_est = T_true; % or apply alignment algorithm here
-            % ESTIMATE covariance
-            Sigma_est = obj.Estimator.compute(pc1, pc2, T_est);
 
-            % MONTE CARLO sampling in se(3)
             N = obj.NumSamples;
-            residuals = zeros(6, N);
+            results.Transforms = cell(1, N);
+            results.Covariances = cell(1, N);
+
             for i = 1:N
-                % sample xi ~ N(0, Sigma_est)
-                xi = mvnrnd(zeros(6,1), Sigma_est)';
+                % Sample a random perturbation in se(3)
+                ri = mvnrnd(zeros(3,1), diag(obj.SigmaSqRot))'; % 0-mean, covariance diag(SigmaSqRot)
+                ti = mvnrnd(zeros(3,1), diag(obj.SigmaSqTrans))'; % 0-mean, covariance diag(SigmaSqTrans)
+                xi = [ri; ti]; % se(3) perturbation vector
                 dT = SE3Utils.expMapSE3(xi);
                 T_pert = dT * T_true;
-                % compute error twist: log(inv(T_pert)*T_true)
-                T_err   = SE3Utils.invMat(T_pert) * T_true;
-                xi_err  = SE3Utils.se3Log(T_err);
-                residuals(:,i) = xi_err;
-            end
 
-            % empirical covariance and Mahalanobis distances
-            results.SigmaEmpirical = cov(residuals');
-            results.Mahalanobis   = sum((residuals' / Sigma_est) .* residuals', 2);
+                % Estimate covariance for this alignment
+                Sigma_est = obj.Estimator.compute(pc1, pc2, T_pert);
+
+                results.Transforms{i} = T_pert;
+                results.Covariances{i} = Sigma_est;
+            end
         end
     end
 end

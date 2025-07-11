@@ -12,6 +12,7 @@ classdef UniformPlaneGenerator < PointCloudGenerator
         height (1,1) double
         R_true (3,3) double = eye(3)
         t_true (3,1) double = zeros(3,1)
+        z_perturb (1,1) double = 0.0  % Optional perturbation in z direction
     end
     methods
         function obj = UniformPlaneGenerator(N, n_hat, w, h, varargin)
@@ -25,6 +26,9 @@ classdef UniformPlaneGenerator < PointCloudGenerator
                         obj.R_true = varargin{k+1};
                     case 't_true'
                         obj.t_true = varargin{k+1};
+                    case 'z_perturb'
+                        % Optional perturbation in z direction
+                        obj.z_perturb = varargin{k+1};
                     otherwise
                         error('Unknown parameter %s', varargin{k});
                 end
@@ -43,14 +47,23 @@ classdef UniformPlaneGenerator < PointCloudGenerator
             v = cross(n, u);
 
             % Sample points
-            u_vals = (rand(obj.N,1) - 0.5) * obj.width;
-            v_vals = (rand(obj.N,1) - 0.5) * obj.height;
-            pts = u_vals .* u' + v_vals .* v';
+            u_vals1 = (rand(obj.N,1) - 0.5) * obj.width;
+            v_vals1 = (rand(obj.N,1) - 0.5) * obj.height;
+            % Small perturbation in z (along n_hat)
+            z_vals1 = (rand(obj.N,1) - 0.5) * obj.z_perturb; % adjust 0.01 as needed
+            pts = u_vals1 .* u' + v_vals1 .* v' + z_vals1 .* n';
 
             % First cloud
             pc1 = pointCloud(pts);
-            % Second cloud by applying R_true and t_true
-            pts2 = (obj.R_true * pts')' + repmat(obj.t_true', obj.N, 1);
+            % Second cloud
+
+            % Generate second cloud points (same distribution as pc1)
+            u_vals2 = (rand(obj.N,1) - 0.5) * obj.width;
+            v_vals2 = (rand(obj.N,1) - 0.5) * obj.height;
+            z_vals2 = (rand(obj.N,1) - 0.5) * obj.z_perturb;
+            pts2_raw = u_vals2 .* u' + v_vals2 .* v' + z_vals2 .* n';
+
+            pts2 = (obj.R_true * pts2_raw')' + repmat(obj.t_true', obj.N, 1);
             pc2 = pointCloud(pts2);
 
             % Ground-truth transform
