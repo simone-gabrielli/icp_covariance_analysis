@@ -24,10 +24,9 @@ t_true  = [0.; 0.; 0.];
 %% Instantiate generator & estimator
 gen = UniformPlaneGenerator(N, n_hat, width, height, "r_true", R_true, "t_true", t_true);
 est = CensiCovarianceEstimator;
-est.CovZ     = eye(6) * (0.005^2);  % per-point measurement noise
-est.Epsilon  = 1e-6;                % finite-difference step
+est.CovZ     = [0,0,0,0,0,0;0,0,0,0,0,0;0,0,0,0,0,0;0,0,0,1,0,0;0,0,0,0,1,0;0,0,0,0,0,1] * (0.005^2);  % per-point measurement noise
 %% Monte Carlo validation
-validator = MonteCarloValidator(gen, est, 'NumSamples', 50, "sigma_sq_rot", [0.0 ,0.0 ,0.0], "sigma_sq_trans", [5.0, 5.0, 0.0]);
+validator = MonteCarloValidator(gen, est, 'NumSamples', 30, "sigma_sq_rot", [0.0 ,0.0 ,0.5], "sigma_sq_trans", [0.0, 0.0, .0]);
 results   = validator.validate();
 
 %% 1) Compare predicted vs empirical variances (diagonals of Σ)
