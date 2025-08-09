@@ -46,6 +46,8 @@ classdef MonteCarloValidator
         function results = validate(obj)
             % Generate data
             [pc1, pc2, T_true] = obj.Generator.generate();
+            % Ensure transform maps pc2 -> pc1 (estimator warps pc2 towards pc1)
+            T_true_21 = inv(T_true);
 
             N = obj.NumSamples;
             results.Transforms = cell(1, N);
@@ -57,7 +59,8 @@ classdef MonteCarloValidator
                 ti = mvnrnd(zeros(3,1), diag(obj.SigmaSqTrans))'; % 0-mean, covariance diag(SigmaSqTrans)
                 xi = [ri; ti]; % se(3) perturbation vector
                 dT = SE3Utils.expMapSE3(xi);
-                T_pert = dT * T_true;
+                % Compose with pc2 -> pc1 ground truth
+                T_pert = dT * T_true_21;
 
                 % Estimate covariance for this alignment
                 Sigma_est = obj.Estimator.compute(pc1, pc2, T_pert);
