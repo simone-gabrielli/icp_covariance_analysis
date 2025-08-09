@@ -1,6 +1,6 @@
-classdef CensiCovarianceEstimatorS2S < CovarianceEstimator
+classdef CensiEstimatorS2MICP < CovarianceEstimator
     properties
-        CovZ      = eye(6) * 0.1;
+        CovZ      = eye(3) * 0.1;
         H_sym     % symbolic Hessian d^2J/dX^2  (optional to keep around)
         Jz_sym    % symbolic ∂g/∂Z            (optional to keep around)
         subs_vars % list of syms for fast subs() (optional)
@@ -9,7 +9,7 @@ classdef CensiCovarianceEstimatorS2S < CovarianceEstimator
     end
 
     methods
-        function obj = CensiCovarianceEstimatorS2S()
+        function obj = CensiEstimatorS2MICP()
             import sympy.*;
             syms x y z a b c pix piy piz qix qiy qiz real
 
@@ -35,7 +35,7 @@ classdef CensiCovarianceEstimatorS2S < CovarianceEstimator
             J    = err.'*err;
             g    = jacobian(J, [x; y; z; a; b; c]).';
             H    = hessian(J, [x; y; z; a; b; c]);
-            Jz   = jacobian(g, [pix; piy; piz; qix; qiy; qiz]);
+            Jz   = jacobian(g, [pix; piy; piz]);
 
             % store the raw symbols (optional)
             obj.H_sym     = H;
@@ -83,7 +83,7 @@ classdef CensiCovarianceEstimatorS2S < CovarianceEstimator
 
             % preallocate
             d2J_dX2  = zeros(6,6);
-            d2J_dZdX = zeros(6,6*n);
+            d2J_dZdX = zeros(6,3*n);
 
             for i = 1:n
                 % pack arguments in the same order as subs_vars
@@ -94,7 +94,7 @@ classdef CensiCovarianceEstimatorS2S < CovarianceEstimator
                 Hi  = obj.fH(args{:});
                 Jzi = obj.fJz(args{:});
                 d2J_dX2 = d2J_dX2 + Hi;
-                d2J_dZdX(:,6*(i-1)+1:6*i) = Jzi;
+                d2J_dZdX(:,3*(i-1)+1:3*i) = Jzi;
             end
 
             % form measurement-noise cov and final ICP covariance

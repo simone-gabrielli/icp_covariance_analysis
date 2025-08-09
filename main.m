@@ -23,7 +23,7 @@ t_true  = [0.; 0.; 0.];
 
 %% Instantiate generator & estimator
 gen = RandomPlaneGenerator(N, n_hat, width, height, "r_true", R_true, "t_true", t_true, "z_perturb", 0.00001);
-est = CensiCovarianceEstimatorS2M;
+est = CensiEstimatorS2MICP;
 est.CovZ     = eye(3) * (0.001);  % per-point measurement noise S2M
 %est.CovZ     = eye(6) * (0.1);  % per-point measurement noise S2S
 %% Monte Carlo validation
