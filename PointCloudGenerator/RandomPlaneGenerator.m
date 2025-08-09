@@ -1,7 +1,7 @@
 %%========================%%
-% UniformPlaneGenerator.m
+% RandomPlaneGenerator.m
 %%========================%%
-classdef UniformPlaneGenerator < PointCloudGenerator
+classdef RandomPlaneGenerator < PointCloudGenerator
     % Generates two point clouds of N points uniformly distributed on a
     % w-by-h rectangle in a plane with normal n_hat, then transforms
     % pc2 = R_true*pc1 + t_true.
@@ -15,7 +15,7 @@ classdef UniformPlaneGenerator < PointCloudGenerator
         z_perturb (1,1) double = 0.0  % Optional perturbation in z direction
     end
     methods
-        function obj = UniformPlaneGenerator(N, n_hat, w, h, varargin)
+        function obj = RandomPlaneGenerator(N, n_hat, w, h, varargin)
             obj.N = N;
             obj.n_hat = n_hat / norm(n_hat);
             obj.width = w;
@@ -46,38 +46,24 @@ classdef UniformPlaneGenerator < PointCloudGenerator
             u = cross(n, tmp); u = u / norm(u);
             v = cross(n, u);
 
-            % Create uniform grid sampling
-            sqrt_N = floor(sqrt(obj.N));
-            actual_N = sqrt_N^2;  % Ensure we have a perfect square
-
-            % Create uniform grid in u,v coordinates
-            [u_grid, v_grid] = meshgrid(linspace(-obj.width/2, obj.width/2, sqrt_N), ...
-                                        linspace(-obj.height/2, obj.height/2, sqrt_N));
-
-            u_vals = u_grid(:);
-            v_vals = v_grid(:);
-
-            % Optional z perturbation for first cloud
-            if obj.z_perturb > 0
-                z_vals1 = (rand(actual_N,1) - 0.5) * obj.z_perturb;
-            else
-                z_vals1 = zeros(actual_N,1);
-            end
-            pts = u_vals .* u' + v_vals .* v' + z_vals1 .* n';
+            % Sample points
+            u_vals1 = (rand(obj.N,1) - 0.5) * obj.width;
+            v_vals1 = (rand(obj.N,1) - 0.5) * obj.height;
+            % Small perturbation in z (along n_hat)
+            z_vals1 = (rand(obj.N,1) - 0.5) * obj.z_perturb; % adjust 0.01 as needed
+            pts = u_vals1 .* u' + v_vals1 .* v' + z_vals1 .* n';
 
             % First cloud
             pc1 = pointCloud(pts);
             % Second cloud
 
-            % Generate second cloud points (same grid, different z perturbation)
-            if obj.z_perturb > 0
-                z_vals2 = (rand(actual_N,1) - 0.5) * obj.z_perturb;
-            else
-                z_vals2 = zeros(actual_N,1);
-            end
-            pts2_raw = u_vals .* u' + v_vals .* v' + z_vals2 .* n';
+            % Generate second cloud points (same distribution as pc1)
+            u_vals2 = (rand(obj.N,1) - 0.5) * obj.width;
+            v_vals2 = (rand(obj.N,1) - 0.5) * obj.height;
+            z_vals2 = (rand(obj.N,1) - 0.5) * obj.z_perturb;
+            pts2_raw = u_vals2 .* u' + v_vals2 .* v' + z_vals2 .* n';
 
-            pts2 = (obj.R_true * pts2_raw')' + repmat(obj.t_true', actual_N, 1);
+            pts2 = (obj.R_true * pts2_raw')' + repmat(obj.t_true', obj.N, 1);
             pc2 = pointCloud(pts2);
 
             % Ground-truth transform

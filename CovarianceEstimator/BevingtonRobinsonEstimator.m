@@ -1,5 +1,5 @@
 % Works well with rotations, translations do not vary
-classdef GaussNewtonEstimator < CovarianceEstimator
+classdef BevingtonRobinsonEstimator < CovarianceEstimator
     properties
         CovZ     = eye(6);
     end
@@ -38,7 +38,8 @@ classdef GaussNewtonEstimator < CovarianceEstimator
         
             % empirical variance: sum of squares / dof
             dof    = 3*n - 6;
-            sigma2 = (g' * g) / dof;       % scalar
+            %sigma2 = (g' * g) / dof;       % scalar
+            sigma2 = (e_all' * e_all) / dof;       % scalar
         
             % covariance = sigma^2 * inv(H)
             Sigma = sigma2 * inv(H);

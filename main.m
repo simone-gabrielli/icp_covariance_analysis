@@ -10,7 +10,7 @@ clear; close all; clc;
 rng(0);
 
 %% Parameters
-N       = 100;                           % Number of points per cloud
+N       = 50;                           % Number of points per cloud
 n_hat   = [0; 0; 1];                      % Plane normal
 width   = 1.0;                            % Plane width
 height  = 1.0;                            % Plane height
@@ -22,11 +22,12 @@ R_true  = axang2rotm([axis'/norm(axis), angle]);
 t_true  = [0.; 0.; 0.];
 
 %% Instantiate generator & estimator
-gen = UniformPlaneGenerator(N, n_hat, width, height, "r_true", R_true, "t_true", t_true);
-est = GaussNewtonEstimator;
-est.CovZ     = [0,0,0,0,0,0;0,0,0,0,0,0;0,0,0,0,0,0;0,0,0,1,0,0;0,0,0,0,1,0;0,0,0,0,0,1] * (0.005^2);  % per-point measurement noise
+gen = RandomPlaneGenerator(N, n_hat, width, height, "r_true", R_true, "t_true", t_true, "z_perturb", 0.00001);
+est = CensiCovarianceEstimatorS2M;
+est.CovZ     = eye(3) * (0.001);  % per-point measurement noise S2M
+%est.CovZ     = eye(6) * (0.1);  % per-point measurement noise S2S
 %% Monte Carlo validation
-validator = MonteCarloValidator(gen, est, 'NumSamples', 30, "sigma_sq_rot", [0.0 ,0.0 ,0.0], "sigma_sq_trans", [0.1, 0.1, 0.1]);
+validator = MonteCarloValidator(gen, est, 'NumSamples', 50, "sigma_sq_rot", [0.0 ,0.0 ,0.0], "sigma_sq_trans", [0., 0., .1]);
 results   = validator.validate();
 
 %% 1) Compare predicted vs empirical variances (diagonals of Σ)
