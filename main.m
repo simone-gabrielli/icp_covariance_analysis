@@ -23,7 +23,7 @@ t_true  = [0.; 0.; 0.];
 
 %% Instantiate generator & estimator
 gen = RandomPlaneGenerator(N, n_hat, width, height, "r_true", R_true, "t_true", t_true, "z_perturb", 0.00001);
-est = CensiEstimatorS2MICP;
+est = CensiEstimatorS2MGICP;
 est.CovZ     = eye(3) * (0.001);  % per-point measurement noise S2M
 %est.CovZ     = eye(6) * (0.1);  % per-point measurement noise S2S
 %% Monte Carlo validation
@@ -47,7 +47,7 @@ end
 figure;
 for k = 1:3
     subplot(3,2,2*k-1); % Left column: angles
-    scatter(abs(perturbations(:,k)), var(:,k), 25, 'filled');
+    scatter(perturbations(:,k), var(:,k), 25, 'filled');
     xlabel(['|Actual ', axes_names{k}, '|']);
     ylabel(['Estimated Covariance ', axes_names{k}]);
     title(['Covariance vs |Actual ', axes_names{k}, '|']);
@@ -55,7 +55,7 @@ for k = 1:3
 end
 for k = 4:6
     subplot(3,2,2*(k-3)); % Right column: translations
-    scatter(abs(perturbations(:,k)), var(:,k), 25, 'filled');
+    scatter(perturbations(:,k), var(:,k), 25, 'filled');
     xlabel(['|Actual ', axes_names{k}, '|']);
     ylabel(['Estimated Covariance ', axes_names{k}]);
     title(['Covariance vs |Actual ', axes_names{k}, '|']);
@@ -112,7 +112,7 @@ grid on;
 figure;
 for k = 1:3
     subplot(1,3,k);
-    scatter(abs(perturbations(:,3+k)), var(:,3+k), 40, 'filled');
+    scatter(perturbations(:,3+k), var(:,3+k), 40, 'filled');
     xlabel(['|t_', axes_names{k+3}, '|']);
     ylabel(['Covariance ', axes_names{k+3}]);
     title(['Covariance vs |t_', axes_names{k+3}, '|']);
